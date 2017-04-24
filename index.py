@@ -1,3 +1,4 @@
+import re
 from functools import wraps
 
 import flask
@@ -5,6 +6,7 @@ import flask_login
 
 import database
 import user
+from pdfs.pdfGenerator import addInfo
 
 app = flask.Flask(__name__)
 
@@ -63,6 +65,30 @@ def user_logout():
 @flask_login.login_required
 def test():
     return 'Cong'
+
+
+@app.route('/gen-pdf/activity', methods=['POST'])
+@allow_cors
+def pdftest():
+    requied_keys = ['username', 'contact', 'title',
+                    'desc', 'people', 'principal',
+                    'starttime', 'stoptime', 'additional',
+                    'item', 'contactplus']
+    items = ['exp', 'speech', 'desk', 'projector', 'board', 'tv']
+    data = dict((k, flask.request.form.get(k)) for k in requied_keys)
+    for k, v in data.items():
+        if not v:
+            return 'No "{}" provided.'.format(k)
+        if k == 'starttime' or k == 'stoptime':
+            if not re.match('^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$', v):
+                return 'Time format error.'
+            data[k] = v.split('-')
+        if k == 'item':
+            data[k] = v.split('-')
+            if any([i not in items for i in data[k]]):
+                return 'Some items do not exist.'
+    f = addInfo('activity', data)
+    return flask.send_file(f, attachment_filename='activity.pdf', as_attachment=True)
 
 
 if __name__ == '__main__':
