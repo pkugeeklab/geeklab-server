@@ -1,13 +1,13 @@
 import re
 from functools import wraps
-
 import flask
 import flask_login
 
-import database
+from utils import database
 import user
-from pdfs.pdfGenerator import addInfo
-
+from pdfs.pdfGenerator import addInfo, CACHE_DIR
+from pdfs.model import *
+from utils.utils import *
 app = flask.Flask(__name__)
 
 
@@ -69,7 +69,7 @@ def test():
 
 @app.route('/gen-pdf/activity', methods=['POST'])
 @allow_cors
-def pdftest():
+def genpdf_activity():
     requied_keys = ['username', 'contact', 'title',
                     'desc', 'people', 'principal',
                     'starttime', 'stoptime', 'additional',
@@ -77,18 +77,30 @@ def pdftest():
     items = ['exp', 'speech', 'desk', 'projector', 'board', 'tv']
     data = dict((k, flask.request.form.get(k)) for k in requied_keys)
     for k, v in data.items():
-        if not v:
-            return 'No "{}" provided.'.format(k)
+        if not v and k != 'item':
+            return stringify({'error': 'No "{}" provided.'.format(k)},
+                              ensure_ascii=False)
         if k == 'starttime' or k == 'stoptime':
             if not re.match('^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$', v):
-                return 'Time format error.'
+                return stringify({'error': 'Time format error.'})
             data[k] = v.split('-')
-        if k == 'item':
+        if k == 'item' and v:
             data[k] = v.split('-')
             if any([i not in items for i in data[k]]):
-                return 'Some items do not exist.'
-    f = addInfo('activity', data)
-    return flask.send_file(f, attachment_filename='activity.pdf', as_attachment=True)
+                return stringify({'error': 'Some items do not exist.'})
+    data = save('activity', data)
+    pdfid = addInfo('activity', data)
+    if pdfid:
+        return stringify({'ok': '/get-pdf/{}'.format(pdfid)})
+    else:
+        return stringify({'error': 'Unknown error'})
+
+
+@app.route('/get-pdf/<pdfid>/', methods=['GET'])
+@allow_cors
+def getpdf(pdfid):
+    f = open('{}/{}.pdf'.format(CACHE_DIR, pdfid), 'rb')
+    return flask.send_file(f, attachment_filename='a{}.pdf'.format(pdfid), as_attachment=True)
 
 
 if __name__ == '__main__':

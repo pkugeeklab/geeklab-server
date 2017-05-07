@@ -3,7 +3,7 @@ import uuid
 import flask_login
 from Crypto.Hash import SHA256
 
-import database
+from utils import database
 
 login_manager = flask_login.LoginManager()
 
