@@ -46,9 +46,8 @@ def addInfo(table_type, data):
     output.addPage(page)
     if not os.path.exists(CACHE_DIR):
         os.mkdir(CACHE_DIR)
-    pdfid = '{:08}'.format(data['pdfid'])
+    pdfid = data['pdfid']
     filename = '{}.pdf'.format(pdfid)
     output.write(open('{}/{}'.format(CACHE_DIR, filename), 'wb'))
-    timer = threading.Timer(70.0, delfile, [filename])
+    timer = threading.Timer(180.0, delfile, [filename])
     timer.start()
-    return pdfid

@@ -6,7 +6,7 @@ import flask_login
 from utils import database
 import user
 from pdfs.pdfGenerator import addInfo, CACHE_DIR
-from pdfs.model import *
+import pdfs.model
 from utils.utils import *
 app = flask.Flask(__name__)
 
@@ -70,16 +70,15 @@ def test():
 @app.route('/gen-pdf/activity', methods=['POST'])
 @allow_cors
 def genpdf_activity():
-    requied_keys = ['username', 'contact', 'title',
-                    'desc', 'people', 'principal',
-                    'starttime', 'stoptime', 'additional',
-                    'item', 'contactplus']
+    requied_keys = ['title', 'people', 'username', 'contact',
+                    'principal', 'contactplus',
+                    'starttime', 'stoptime', 'desc', 'additional',
+                    'item']
     items = ['exp', 'speech', 'desk', 'projector', 'board', 'tv']
     data = dict((k, flask.request.form.get(k)) for k in requied_keys)
     for k, v in data.items():
         if not v and k != 'item':
-            return stringify({'error': 'No "{}" provided.'.format(k)},
-                              ensure_ascii=False)
+            return stringify({'error': {k: 'No "{}" provided.'.format(k)}})
         if k == 'starttime' or k == 'stoptime':
             if not re.match('^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$', v):
                 return stringify({'error': 'Time format error.'})
@@ -88,13 +87,25 @@ def genpdf_activity():
             data[k] = v.split('-')
             if any([i not in items for i in data[k]]):
                 return stringify({'error': 'Some items do not exist.'})
-    data = save('activity', data)
-    pdfid = addInfo('activity', data)
+    data = pdfs.model.save('activity', data)
+    addInfo('activity', data)
+    pdfid = data['pdfid']
     if pdfid:
-        return stringify({'ok': '/get-pdf/{}'.format(pdfid)})
+        return stringify({'ok': {'pdfid': pdfid}})
     else:
         return stringify({'error': 'Unknown error'})
 
+@app.route('/query-pdf/<pdfid>', methods=['GET'])
+@allow_cors
+def querypdf(pdfid):
+    print(pdfid)
+    data = pdfs.model.get(pdfid)
+    if data:
+        table_type = data['type']
+        addInfo('activity', data)
+        return stringify({'ok': {'pdfid': pdfid}})
+    else:
+        return stringify({'error': {'pdfid': 'Not found'}})
 
 @app.route('/get-pdf/<pdfid>/', methods=['GET'])
 @allow_cors
@@ -105,7 +116,6 @@ def getpdf(pdfid):
 
 if __name__ == '__main__':
     database.load()
-    print(database.db)
     user.login_manager.init_app(app)
     app.secret_key = 'whoami'
     app.run(debug=True)
