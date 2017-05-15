@@ -77,3 +77,47 @@
 | ----- | ------ | ----------------- |
 | error | String | 如果有错误则返回此字段，否则不返回 |
 
+# 表单提交
+
+## 活动预约
+
+##### POST /apply/activity
+
+提交预约信息
+
+| 字段         | 类型     | 说明                                       |
+| ---------- | ------ | ---------------------------------------- |
+| title      | String | 活动标题                                     |
+| people     | String | 参与活动人数                                   |
+| username   | String | 姓名                                       |
+| department | String | 院系                                       |
+| telephone  | String | 电话                                       |
+| email      | String | 电子邮件                                     |
+| starttime  | String | 开始时间，格式为YYYY-MM-DD-HH-mm                 |
+| stoptime   | String | 结束时间，格式为YYYY-MM-DD-HH-mm                 |
+| desc       | String | 活动描述                                     |
+| additional | String | 补充说明                                     |
+| items      | String | 需要借的物品，选填，在列表['exp', 'speech', 'desk', 'projector', 'board', 'tv']中，以'-'连接 |
+
+以json形式返回内容，如果正常退出，则返回{}
+
+| 字段    | 类型     | 说明                                |
+| ----- | ------ | --------------------------------- |
+| error | Object | 如果有错误则返回此字段，否则不返回；错误格式为{字段: 错误类型} |
+| ok    | Object | 成功提交则返回次字段，格式为{pdfid: xxxxx}      |
+
+## 查询预约
+
+##### GET /query/\<pdfid\>
+
+| 字段    | 类型     | 说明                           |
+| ----- | ------ | ---------------------------- |
+| error | String | 如果有错误则返回此字段，否则不返回            |
+| ok    | Object | 成功提交则返回次字段，格式为{pdfid: xxxxx} |
+
+## 获取文件地址
+
+##### GET /get-pdf/\<pdfid>
+
+直接返回文件
+
