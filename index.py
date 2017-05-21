@@ -7,6 +7,7 @@ from utils import database
 import user
 from pdfs.pdfGenerator import addInfo, CACHE_DIR
 import pdfs.model
+import pdfs.check
 from utils.utils import *
 app = flask.Flask(__name__)
 
@@ -85,8 +86,12 @@ def genpdf_activity():
             data[k] = v.split('-')
         if k == 'item' and v:
             data[k] = v.split('-')
+            # data[k] = {}  # v.split('-')
             if any([i not in items for i in data[k]]):
                 return stringify({'error': 'Some items do not exist.'})
+    checkinfo = pdfs.check.match(data)
+    if checkinfo:
+        return stringify({'error': checkinfo})
     data = pdfs.model.save('activity', data)
     addInfo('activity', data)
     pdfid = data['pdfid']
